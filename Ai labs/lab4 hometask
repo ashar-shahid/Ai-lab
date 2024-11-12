@@ -1,0 +1,69 @@
+import pandas as pd
+from sklearn import preprocessing
+from sklearn.naive_bayes import GaussianNB
+from sklearn.metrics import confusion_matrix, accuracy_score
+from sklearn.model_selection import train_test_split
+
+dataset = pd.read_csv("world-happiness-report-2021.csv")
+
+df = dataset.drop(columns=['Country name', 'Regional indicator'])
+
+df['Happiness Category'] = pd.cut(df['Ladder score'], bins=[-float('inf'), 5, 6.5, float('inf')], labels=['Low', 'Medium', 'High'])
+
+features = df.drop(columns=['Ladder score', 'Happiness Category'])
+label = df['Happiness Category']
+
+le = preprocessing.LabelEncoder()
+label_encoded = le.fit_transform(label)
+
+features_train, features_test, label_train, label_test = train_test_split(features, label_encoded, test_size=0.2, random_state=42)
+
+model = GaussianNB()
+model.fit(features_train, label_train)
+
+predicted = model.predict(features_test)
+
+conf_mat = confusion_matrix(label_test, predicted)
+accuracy = accuracy_score(label_test, predicted)
+
+print("Confusion Matrix:")
+print(conf_mat)
+print("Accuracy:", accuracy)
+
+print("\nConfusion Matrix Interpretation:")
+TP = conf_mat[0, 0] 
+FP = conf_mat[0, 1]  
+TN = conf_mat[1, 1] 
+FN = conf_mat[1, 0] 
+print(f"True Positives (TP): {TP}")
+print(f"False Positives (FP): {FP}")
+print(f"True Negatives (TN): {TN}")
+print(f"False Negatives (FN): {FN}")
+
+manual_accuracy = (TP + TN) / (TP + TN + FP + FN)
+print(f"Manual Accuracy: {manual_accuracy:.2f}")
+
+input_data = pd.DataFrame({
+    'Standard error of ladder score': [0.035],
+    'upperwhisker': [7.687],
+    'lowerwhisker': [7.552],
+    'Logged GDP per capita': [10.933],
+    'Social support': [0.954],
+    'Healthy life expectancy': [72.7],
+    'Freedom to make life choices': [0.946],
+    'Generosity': [0.03],
+    'Perceptions of corruption': [0.179],
+    'Ladder score in Dystopia': [2.43],
+    'Explained by: Log GDP per capita': [1.502],
+    'Explained by: Social support': [1.108],
+    'Explained by: Healthy life expectancy': [0.763],
+    'Explained by: Freedom to make life choices': [0.686],
+    'Explained by: Generosity': [0.208],
+    'Explained by: Perceptions of corruption': [0.485],
+    'Dystopia + residual': [2.868]
+})
+
+predicted_category = model.predict(input_data)
+
+predicted_category_label = le.inverse_transform(predicted_category)
+print("\nPredicted Happiness Category:", predicted_category_label[0])
